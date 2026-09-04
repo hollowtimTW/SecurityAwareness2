@@ -1,0 +1,38 @@
+@model SecurityAwareness.Platform.ViewModels.EmployeeEditViewModel
+@{ ViewData["Title"] = "新增員工"; }
+<h2>👤 新增員工</h2>
+<form method="post" class="card card-body" style="max-width: 600px;">
+    @Html.AntiForgeryToken()
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">員工編號 *</label>
+            <input class="form-control" name="EmployeeNo" required placeholder="E001" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">姓名 *</label>
+            <input class="form-control" name="DisplayName" required />
+        </div>
+        <div class="col-12">
+            <label class="form-label">Email *</label>
+            <input class="form-control" name="Email" type="email" required />
+        </div>
+        <div class="col-12">
+            <label class="form-label">部門 *</label>
+            <select class="form-select" name="DepartmentId" required>
+                <option value="">— 選擇 —</option>
+                @foreach (var d in Model.Departments)
+                {
+                    <option value="@d.DepartmentId">@d.Code — @d.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-12 form-check ms-3">
+            <input class="form-check-input" type="checkbox" name="IsActive" value="true" checked />
+            <label class="form-check-label">在職</label>
+        </div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-primary">建立</button>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index")">取消</a>
+    </div>
+</form>

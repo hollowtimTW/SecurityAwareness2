@@ -1,0 +1,33 @@
+@{ ViewData["Title"] = "資安宣導"; }
+<div class="container py-5" style="max-width: 720px;">
+    <div class="alert alert-warning border-warning">
+        <h2 class="mb-3">⚠️ 這是社交工程演練</h2>
+        <p class="mb-2">您剛才點擊了一封模擬的釣魚信件。</p>
+        <p class="mb-2">真正的駭客也會用類似手法騙取您的帳號、密碼或個人資料。</p>
+        <hr />
+        <p class="mb-1"><strong>如果這是真實的攻擊,以下資訊可能已被竊取:</strong></p>
+        <ul>
+            <li>您的登入帳號與密碼</li>
+            <li>個人資料(姓名、Email、電話)</li>
+            <li>工作上的機密文件</li>
+        </ul>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header"><strong>下次遇到類似信件,請記得 4 步驟:</strong></div>
+        <div class="card-body">
+            <ol class="mb-3">
+                <li><strong>檢查寄件者</strong> — 是否真的是公司內部?</li>
+                <li><strong>檢查連結網址</strong> — 滑鼠移到連結上看真的 URL</li>
+                <li><strong>不要輸入帳密</strong> — 尤其是被導到非公司網域的登入頁</li>
+                <li><strong>有疑問就回報</strong> — 點下方按鈕,IT 會協助</li>
+            </ol>
+
+            <form method="post" action="/Tracking/Report">
+                <input type="hidden" name="token" value="@Model" />
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary">📢 我知道了,回報這是釣魚信</button>
+            </form>
+        </div>
+    </div>
+</div>

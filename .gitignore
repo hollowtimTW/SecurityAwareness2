@@ -1,0 +1,25 @@
+## ignore build output and local config
+
+bin/
+obj/
+artifacts/
+publish/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test
+TestResults/
+coverage/

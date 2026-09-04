@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>SecurityAwareness.Common</RootNamespace>
+    <AssemblyName>SecurityAwareness.Common</AssemblyName>
+  </PropertyGroup>
+
+</Project>

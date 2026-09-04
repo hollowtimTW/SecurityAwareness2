@@ -1,0 +1,25 @@
+@{ ViewData["Title"] = "後台"; }
+<div class="container py-5">
+    <h1>📊 Dashboard</h1>
+    <p class="lead">歡迎來到 Security Awareness 後台。</p>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <a class="card text-decoration-none text-dark p-3" href="@Url.Action("Index", "Campaign", new { area = "Admin" })">
+                <h5>📋 活動管理</h5>
+                <p class="text-muted mb-0">建立演練活動 / 派發追蹤連結</p>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a class="card text-decoration-none text-dark p-3" href="@Url.Action("Index", "Employee", new { area = "Admin" })">
+                <h5>👥 員工管理</h5>
+                <p class="text-muted mb-0">員工清單 / 部門對應</p>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a class="card text-decoration-none text-dark p-3" href="@Url.Action("Index", "Department", new { area = "Admin" })">
+                <h5>🏢 部門管理</h5>
+                <p class="text-muted mb-0">部門 CRUD</p>
+            </a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,18 @@
+@model SecurityAwareness.Platform.ViewModels.DepartmentListItemViewModel
+@{ ViewData["Title"] = "新增部門"; }
+<h2>🏢 新增部門</h2>
+<form method="post" class="card card-body" style="max-width: 480px;">
+    @Html.AntiForgeryToken()
+    <div class="mb-3">
+        <label class="form-label">Code *</label>
+        <input class="form-control" name="code" required placeholder="例: HR" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">名稱 *</label>
+        <input class="form-control" name="name" required placeholder="例: 人力資源部" />
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary">建立</button>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index")">取消</a>
+    </div>
+</form>

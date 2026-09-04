@@ -1,0 +1,38 @@
+@model IReadOnlyList<SecurityAwareness.Platform.ViewModels.MailboxListItemViewModel>
+@{ ViewData["Title"] = "寄件信箱"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>📧 寄件信箱</h2>
+    <a class="btn btn-primary" href="@Url.Action("Create")">+ 新增信箱</a>
+</div>
+<div class="card">
+    <table class="table table-sm table-striped mb-0">
+        <thead class="table-light">
+            <tr><th>Email</th><th>顯示名稱</th><th>類型</th><th>每日配額</th><th>已用</th><th>啟用</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var m in Model)
+            {
+                <tr>
+                    <td><code>@m.Email</code></td>
+                    <td>@m.DisplayName</td>
+                    <td>
+                        @switch (m.Provider)
+                        {
+                            case 0: <span class="badge bg-secondary">Fake</span> break;
+                            case 1: <span class="badge bg-info">Graph</span> break;
+                            case 2: <span class="badge bg-warning">SMTP</span> break;
+                        }
+                    </td>
+                    <td>@m.DailyQuota</td>
+                    <td>@m.DailyQuotaUsed</td>
+                    <td>@(m.IsActive ? "✅" : "❌")</td>
+                    <td><a class="btn btn-sm btn-outline-primary" href="@Url.Action("Edit", new { id = m.SenderMailboxId })">編輯</a></td>
+                </tr>
+            }
+            @if (Model.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-3">尚未新增任何寄件信箱</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

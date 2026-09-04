@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SecurityAwareness.Application/SecurityAwareness.Application.csproj" />
+    <Project Path="src/SecurityAwareness.Common/SecurityAwareness.Common.csproj" />
+    <Project Path="src/SecurityAwareness.Infrastructure/SecurityAwareness.Infrastructure.csproj" />
+    <Project Path="src/SecurityAwareness.Platform/SecurityAwareness.Platform.csproj" />
+  </Folder>
+</Solution>

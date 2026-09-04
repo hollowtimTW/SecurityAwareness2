@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "匯入";
+}
+<h2>📥 匯入 / 匯出</h2>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h5>員工 CSV 匯入</h5>
+            <p class="text-muted small">格式:<code>EmployeeNo,DisplayName,Email,DepartmentCode,IsActive</code></p>
+            <p><a href="@Url.Action("DownloadSample")" class="btn btn-sm btn-outline-secondary">📄 下載範例 CSV</a></p>
+            <form method="post" enctype="multipart/form-data" action="@Url.Action("UploadEmployees")">
+                @Html.AntiForgeryToken()
+                <input type="file" name="file" accept=".csv" required class="form-control mb-2" />
+                <button class="btn btn-primary">匯入員工</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h5>追蹤連結匯出</h5>
+            <p class="text-muted small">在某活動的「檢視」頁可下載該活動所有員工的追蹤 URL,給 IT 手動塞 SMTP 寄信。</p>
+            <a class="btn btn-outline-primary" href="@Url.Action("Index", "Campaign")">前往活動列表</a>
+        </div>
+    </div>
+</div>

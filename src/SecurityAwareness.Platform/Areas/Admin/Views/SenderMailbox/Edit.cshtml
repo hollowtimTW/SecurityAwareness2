@@ -1,0 +1,37 @@
+@model SecurityAwareness.Platform.ViewModels.MailboxEditViewModel
+@{ ViewData["Title"] = "編輯信箱"; }
+<h2>📧 編輯寄件信箱</h2>
+<form method="post" class="card card-body" style="max-width: 640px;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="SenderMailboxId" value="@Model.SenderMailboxId" />
+    <div class="row g-3">
+        <div class="col-md-7">
+            <label class="form-label">Email *</label>
+            <input class="form-control" name="Email" type="email" required value="@Model.Email" />
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">顯示名稱 *</label>
+            <input class="form-control" name="DisplayName" required value="@Model.DisplayName" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">寄件類型</label>
+            <select class="form-select" name="Provider">
+                <option value="0" @(Model.Provider == 0 ? "selected" : "")>Fake</option>
+                <option value="1" @(Model.Provider == 1 ? "selected" : "")>Graph</option>
+                <option value="2" @(Model.Provider == 2 ? "selected" : "")>SMTP</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">每日配額</label>
+            <input class="form-control" name="DailyQuota" type="number" value="@Model.DailyQuota" />
+        </div>
+        <div class="col-md-2 form-check mt-4 ms-3">
+            <input class="form-check-input" type="checkbox" name="IsActive" value="true" @(Model.IsActive ? "checked" : "") />
+            <label class="form-check-label">啟用</label>
+        </div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-primary">更新</button>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index")">取消</a>
+    </div>
+</form>

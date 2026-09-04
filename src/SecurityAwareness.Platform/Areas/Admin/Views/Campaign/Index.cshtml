@@ -1,0 +1,62 @@
+@model IReadOnlyList<SecurityAwareness.Platform.ViewModels.CampaignListItemViewModel>
+@{ ViewData["Title"] = "活動"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>📋 演練活動</h2>
+    <a class="btn btn-primary" href="@Url.Action("Create")">+ 新增活動</a>
+</div>
+<div class="card">
+    <table class="table table-sm table-striped mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Code</th><th>標題</th><th>起訖</th><th>狀態</th>
+                <th class="text-end">指派數</th><th class="text-end">點擊數</th>
+                <th>建立</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model)
+            {
+                <tr>
+                    <td><code>@c.Code</code></td>
+                    <td>@c.Title</td>
+                    <td class="small">@c.StartAt.ToString("yyyy-MM-dd HH:mm")<br />~ @c.EndAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        @switch (c.Status)
+                        {
+                            case "Draft": <span class="badge bg-secondary">Draft</span> break;
+                            case "Active": <span class="badge bg-success">Active</span> break;
+                            case "Completed": <span class="badge bg-info">Completed</span> break;
+                            case "Cancelled": <span class="badge bg-dark">Cancelled</span> break;
+                            default: <span class="badge bg-warning">?</span> break;
+                        }
+                    </td>
+                    <td class="text-end">@c.AssignmentCount</td>
+                    <td class="text-end">@c.ClickCount</td>
+                    <td class="small">@c.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Assignments", new { id = c.CampaignId })">檢視</a>
+                        @if (c.Status == "Draft")
+                        {
+                            <form method="post" action="@Url.Action("Start", new { id = c.CampaignId })" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-sm btn-success">▶ 啟動</button>
+                            </form>
+                        }
+                        @if (c.Status == "Active")
+                        {
+                            <a class="btn btn-sm btn-warning" href="@Url.Action("Dispatch", new { id = c.CampaignId })">📧 派送</a>
+                            <form method="post" action="@Url.Action("End", new { id = c.CampaignId })" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-sm btn-danger">■ 結束</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (Model.Count == 0)
+            {
+                <tr><td colspan="8" class="text-center text-muted py-3">尚未建立任何活動</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,27 @@
+@model SecurityAwareness.Platform.ViewModels.LoginViewModel
+@{ ViewData["Title"] = "登入"; Layout = "_Layout"; }
+<div class="container py-5" style="max-width: 420px;">
+    <h2 class="mb-4 text-center">🔒 Security Awareness</h2>
+    <div class="card">
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger">@Model.ErrorMessage</div>
+            }
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                <div class="mb-3">
+                    <label class="form-label">帳號</label>
+                    <input class="form-control" name="username" required autofocus />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密碼</label>
+                    <input class="form-control" name="password" type="password" required />
+                </div>
+                <button type="submit" class="btn btn-primary w-100">登入</button>
+            </form>
+            <p class="text-muted mt-3 mb-0 text-center small">預設帳號:<code>admin</code> / <code>Admin@123</code></p>
+        </div>
+    </div>
+</div>

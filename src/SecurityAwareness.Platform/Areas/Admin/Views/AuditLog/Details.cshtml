@@ -1,0 +1,16 @@
+@model SecurityAwareness.Infrastructure.Entities.AuditLog
+@{ ViewData["Title"] = $"AuditLog #{Model.AuditLogId}"; }
+<h2>📋 AuditLog #@Model.AuditLogId</h2>
+
+<div class="card mb-3"><div class="card-body">
+<dl class="row mb-0">
+    <dt class="col-sm-2">時間</dt><dd class="col-sm-10">@Model.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss.fffffff")</dd>
+    <dt class="col-sm-2">Action</dt><dd class="col-sm-10"><span class="badge bg-primary">@Model.Action</span></dd>
+    <dt class="col-sm-2">EntityType</dt><dd class="col-sm-10">@Model.EntityType</dd>
+    <dt class="col-sm-2">EntityId</dt><dd class="col-sm-10"><code>@(Model.EntityId ?? "—")</code></dd>
+    <dt class="col-sm-2">Actor</dt><dd class="col-sm-10"><code style="font-size: 11px">@Model.ActorUsername</code></dd>
+    <dt class="col-sm-2">Detail</dt><dd class="col-sm-10"><pre class="bg-light p-2 mb-0" style="white-space: pre-wrap; word-break: break-all;">@(Model.Detail ?? "(空)")</pre></dd>
+</dl>
+</div></div>
+
+<a class="btn btn-secondary" href="@Url.Action("Index")">← 回列表</a>

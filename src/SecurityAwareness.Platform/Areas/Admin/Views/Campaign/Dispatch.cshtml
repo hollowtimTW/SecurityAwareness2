@@ -1,0 +1,37 @@
+@model SecurityAwareness.Platform.ViewModels.DispatchViewModel
+@{ ViewData["Title"] = "派送信件"; }
+<h2>📧 派送信件 — @Model.CampaignCode</h2>
+
+<div class="alert alert-info">
+    活動:<strong>@Model.CampaignTitle</strong><br />
+    Pending(尚未寄):<strong>@Model.PendingCount</strong> 封
+</div>
+
+@if (Model.Mailboxes.Count == 0)
+{
+    <div class="alert alert-warning">
+        尚未建立任何寄件信箱,請先到 <a href="@Url.Action("Index", "SenderMailbox")">寄件信箱</a> 新增。
+    </div>
+}
+else
+{
+    <form method="post" class="card card-body">
+        @Html.AntiForgeryToken()
+        <p>選擇寄件信箱(round-robin 派送):</p>
+        @foreach (var m in Model.Mailboxes)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="mailboxIds" value="@m.SenderMailboxId"
+                       id="m_@m.SenderMailboxId" checked="@Model.SelectedMailboxIds.Contains(m.SenderMailboxId)" />
+                <label class="form-check-label" for="m_@m.SenderMailboxId">
+                    <code>@m.Email</code> — @m.DisplayName
+                    <small class="text-muted">(今日已用 @m.DailyQuotaUsed / @m.DailyQuota)</small>
+                </label>
+            </div>
+        }
+        <div class="mt-3 d-flex gap-2">
+            <button class="btn btn-primary">送出寄信佇列</button>
+            <a class="btn btn-outline-secondary" href="@Url.Action("Assignments", new { id = Model.CampaignId })">取消</a>
+        </div>
+    </form>
+}
