@@ -34,12 +34,25 @@ public class AssignmentRepository : IAssignmentRepository
 
     public async Task IncrementClickCountAsync(int assignmentId, CancellationToken ct = default)
     {
-        await _db.Database.ExecuteSqlInterpolatedAsync(
-            $@"UPDATE EmployeeCampaignAssignments
-               SET ClickCount = ClickCount + 1,
-                   FirstClickedAt = ISNULL(FirstClickedAt, GETDATE()),
-                   Status = CASE WHEN Status IN (0, 1) THEN 2 ELSE Status END
-               WHERE AssignmentId = {assignmentId}", ct);
+        // Use raw SQL on relational providers; InMemory DB requires loading + updating.
+        if (_db.Database.IsRelational())
+        {
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $@"UPDATE EmployeeCampaignAssignments
+                   SET ClickCount = ClickCount + 1,
+                       FirstClickedAt = ISNULL(FirstClickedAt, GETDATE()),
+                       Status = CASE WHEN Status IN (0, 1) THEN 2 ELSE Status END
+                   WHERE AssignmentId = {assignmentId}", ct);
+            return;
+        }
+
+        // InMemory provider fallback
+        var a = await _db.EmployeeCampaignAssignments.FirstOrDefaultAsync(x => x.AssignmentId == assignmentId, ct);
+        if (a is null) return;
+        a.ClickCount += 1;
+        a.FirstClickedAt ??= DateTime.Now;
+        if (a.Status <= 1) a.Status = 2;
+        await _db.SaveChangesAsync(ct);
     }
 
     public Task<int> CountByCampaignAsync(int campaignId, CancellationToken ct = default)

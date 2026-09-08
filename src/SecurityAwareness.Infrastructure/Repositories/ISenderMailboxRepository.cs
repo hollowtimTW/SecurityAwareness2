@@ -12,5 +12,6 @@ public interface ISenderMailboxRepository
     Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default);
     Task IncrementQuotaAsync(int id, CancellationToken ct = default);
     Task ResetAllDailyQuotasAsync(CancellationToken ct = default);
+    Task DeleteAsync(SenderMailbox mailbox, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

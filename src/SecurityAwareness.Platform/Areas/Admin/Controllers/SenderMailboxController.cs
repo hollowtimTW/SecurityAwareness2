@@ -78,4 +78,26 @@ public class SenderMailboxController : Controller
         TempData["Message"] = "已更新";
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ToggleActive(int id, CancellationToken ct)
+    {
+        var m = await _service.GetByIdAsync(id, ct);
+        if (m is null) return NotFound();
+        await _service.SetActiveAsync(id, !m.IsActive, ct);
+        TempData["Message"] = $"已{(m.IsActive ? "停用" : "啟用")} {m.Email}";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    {
+        await _service.DeleteAsync(id, ct);
+        TempData["Message"] = "已刪除寄件信箱";
+        return RedirectToAction(nameof(Index));
+    }
 }

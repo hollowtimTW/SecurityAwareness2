@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<ISystemAccountService, SystemAccountService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<ISenderMailboxService, SenderMailboxService>();
+        services.AddScoped<ICampaignScheduleService, CampaignScheduleService>();
 
         // Password hasher is stateless and thread-safe
         services.AddSingleton<PasswordHasher>();
@@ -35,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IAssignmentRepository, AssignmentRepository>();
         services.AddScoped<IClickRepository, ClickRepository>();
         services.AddScoped<ISenderMailboxRepository, SenderMailboxRepository>();
+        services.AddScoped<ICampaignScheduleRepository, CampaignScheduleRepository>();
         services.AddScoped<ISystemAccountRepository, SystemAccountRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 

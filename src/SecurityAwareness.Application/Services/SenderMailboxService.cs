@@ -53,4 +53,23 @@ public class SenderMailboxService : ISenderMailboxService
 
     public Task<bool> EmailExistsAsync(string email, CancellationToken ct = default)
         => _repo.ExistsByEmailAsync(email, ct);
+
+    public async Task SetActiveAsync(int id, bool isActive, CancellationToken ct = default)
+    {
+        var m = await _repo.GetByIdAsync(id, ct)
+            ?? throw new InvalidOperationException($"Mailbox {id} not found.");
+        m.IsActive = isActive;
+        await _repo.UpdateAsync(m, ct);
+        await _repo.SaveChangesAsync(ct);
+        _logger.LogInformation("Mailbox {Id} IsActive set to {Active}", id, isActive);
+    }
+
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var m = await _repo.GetByIdAsync(id, ct)
+            ?? throw new InvalidOperationException($"Mailbox {id} not found.");
+        await _repo.DeleteAsync(m, ct);
+        await _repo.SaveChangesAsync(ct);
+        _logger.LogInformation("Deleted Mailbox {Id} ({Email})", id, m.Email);
+    }
 }

@@ -2,7 +2,11 @@
 @{ ViewData["Title"] = "受測者清單"; }
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>📋 @Model.CampaignCode — 受測者清單</h2>
-    <a class="btn btn-outline-secondary" href="@Url.Action("Index")">← 返回</a>
+    <div>
+        <a class="btn btn-outline-secondary btn-sm" href="@ViewBag.TrackingUrl">📄 匯出追蹤連結</a>
+        <a class="btn btn-outline-secondary btn-sm" href="@ViewBag.ReportUrl">📊 匯出完整報表</a>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index")">← 返回</a>
+    </div>
 </div>
 
 <div class="row g-2 mb-3">

@@ -41,6 +41,10 @@
                                 @Html.AntiForgeryToken()
                                 <button class="btn btn-sm btn-success">▶ 啟動</button>
                             </form>
+                            <form method="post" action="@Url.Action("Clone", new { id = c.CampaignId })" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-sm btn-outline-secondary">📋 複製</button>
+                            </form>
                         }
                         @if (c.Status == "Active")
                         {

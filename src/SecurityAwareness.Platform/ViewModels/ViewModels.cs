@@ -83,6 +83,27 @@ public sealed record ScheduleViewModel
     public bool IsActive { get; set; } = true;
 }
 
+public sealed record ScheduleListItemViewModel(
+    int ScheduleId,
+    int CampaignId,
+    string CampaignCode,
+    byte ScheduleType,
+    DateTime StartAt,
+    DateTime? EndAt,
+    DateTime? NextRunAt,
+    DateTime? LastRunAt,
+    bool IsActive);
+
+public sealed class ScheduleEditViewModel
+{
+    public int ScheduleId { get; set; }
+    public int CampaignId { get; set; }
+    public byte ScheduleType { get; set; } = 1;
+    public DateTime StartAt { get; set; }
+    public DateTime? EndAt { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
 public sealed class ReportDashboardViewModel
 {
     public int CampaignId { get; set; }

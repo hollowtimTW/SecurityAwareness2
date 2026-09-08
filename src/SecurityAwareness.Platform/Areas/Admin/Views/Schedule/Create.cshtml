@@ -1,0 +1,46 @@
+@model SecurityAwareness.Platform.ViewModels.ScheduleEditViewModel
+@{
+    ViewData["Title"] = "新增排程";
+    var campaigns = ViewBag.Campaigns as IReadOnlyList<SecurityAwareness.Infrastructure.Entities.PhishingCampaign>
+        ?? new List<SecurityAwareness.Infrastructure.Entities.PhishingCampaign>();
+}
+<h2>⏰ 新增活動排程</h2>
+<form method="post" class="card card-body" style="max-width: 640px;">
+    @Html.AntiForgeryToken()
+    <div class="mb-3">
+        <label class="form-label">活動 *</label>
+        <select class="form-select" name="CampaignId" required>
+            <option value="">— 選擇 —</option>
+            @foreach (var c in campaigns)
+            {
+                <option value="@c.CampaignId" selected="@(c.CampaignId == Model.CampaignId)">
+                    @c.Code — @c.Title
+                </option>
+            }
+        </select>
+        <small class="text-muted">活動需已建立</small>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">排程類型</label>
+        <select class="form-select" name="ScheduleType">
+            <option value="1" selected="@(Model.ScheduleType == 1)">OneTime (單次)</option>
+            <option value="2" selected="@(Model.ScheduleType == 2)">Daily (每天)</option>
+            <option value="3" selected="@(Model.ScheduleType == 3)">Weekly (每週)</option>
+        </select>
+    </div>
+    <div class="row g-2">
+        <div class="col-md-6">
+            <label class="form-label">首次執行時間</label>
+            <input class="form-control" type="datetime-local" name="StartAt" value="@Model.StartAt.ToString("yyyy-MM-ddTHH:mm")" required />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">週期性結束時間(選填)</label>
+            <input class="form-control" type="datetime-local" name="EndAt" value="@Model.EndAt?.ToString("yyyy-MM-ddTHH:mm")" />
+            <small class="text-muted">Daily/Weekly 才需要</small>
+        </div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-primary">建立</button>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index")">取消</a>
+    </div>
+</form>

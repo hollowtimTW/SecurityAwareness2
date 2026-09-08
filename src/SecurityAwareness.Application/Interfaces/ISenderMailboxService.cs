@@ -9,5 +9,7 @@ public interface ISenderMailboxService
     Task<SenderMailbox?> GetByIdAsync(int id, CancellationToken ct = default);
     Task<SenderMailbox> CreateAsync(SenderMailbox mailbox, CancellationToken ct = default);
     Task UpdateAsync(SenderMailbox mailbox, CancellationToken ct = default);
+    Task SetActiveAsync(int id, bool isActive, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
     Task<bool> EmailExistsAsync(string email, CancellationToken ct = default);
 }

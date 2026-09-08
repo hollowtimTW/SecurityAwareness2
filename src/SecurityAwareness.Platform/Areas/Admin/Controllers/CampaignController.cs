@@ -110,6 +110,27 @@ public class CampaignController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Clone(int id, CancellationToken ct)
+    {
+        var source = await _service.GetByIdAsync(id, ct);
+        if (source is null) return NotFound();
+        var actor = User.Identity?.Name ?? "admin";
+        var clone = new PhishingCampaign
+        {
+            Code = source.Code + "-COPY",
+            Title = source.Title + " (副本)",
+            Description = source.Description,
+            StartAt = DateTime.Now.AddMinutes(1),
+            EndAt = DateTime.Now.AddDays(7)
+        };
+        var created = await _service.CreateAsync(clone, actor, ct);
+        TempData["Message"] = $"已複製為活動 #{created.CampaignId} {created.Code}";
+        return RedirectToAction(nameof(Index));
+    }
+
     public async Task<IActionResult> Assignments(int id, CancellationToken ct)
     {
         var c = await _service.GetByIdAsync(id, ct);
@@ -133,6 +154,8 @@ public class CampaignController : Controller
             TotalReported: list.Count(a => a.Status == (byte)Common.Enums.AssignmentStatus.Reported),
             rows);
 
+        ViewBag.ReportUrl = Url.Action("ExportReport", "Import", new { campaignId = id });
+        ViewBag.TrackingUrl = Url.Action("ExportTrackingLinks", "Import", new { campaignId = id });
         return View(vm);
     }
 

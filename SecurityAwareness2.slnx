@@ -5,4 +5,7 @@
     <Project Path="src/SecurityAwareness.Infrastructure/SecurityAwareness.Infrastructure.csproj" />
     <Project Path="src/SecurityAwareness.Platform/SecurityAwareness.Platform.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SecurityAwareness.Tests/SecurityAwareness.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -1,6 +1,11 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 using SecurityAwareness.Application;
 using SecurityAwareness.Application.Interfaces;
 using SecurityAwareness.Application.Services;
@@ -10,78 +15,149 @@ using SecurityAwareness.Infrastructure.Repositories;
 using SecurityAwareness.Platform.Filters;
 using SecurityAwareness.Platform.HostedServices;
 using SecurityAwareness.Platform.Services;
+using System.Threading.RateLimiting;
 
-var builder = WebApplication.CreateBuilder(args);
+// ===== Bootstrap Serilog (BEFORE WebApplicationBuilder) =====
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "SecurityAwareness2")
+    .WriteTo.Console()
+    .WriteTo.File(
+        formatter: new CompactJsonFormatter(),
+        path: "Logs/sa2-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30)
+    .CreateLogger();
 
-// ===== DB =====
-var conn = builder.Configuration.GetConnectionString("Default")
-    ?? throw new InvalidOperationException("ConnectionStrings:Default missing.");
-builder.Services.AddAwarenessInfrastructure(conn);
-builder.Services.AddAwarenessApplication();
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
+    builder.Host.UseSerilog();
 
-// ===== Cookie Auth =====
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(opts =>
+    // ===== DB =====
+    var conn = builder.Configuration.GetConnectionString("Default")
+        ?? throw new InvalidOperationException("ConnectionStrings:Default missing.");
+    builder.Services.AddAwarenessInfrastructure(conn);
+    builder.Services.AddAwarenessApplication();
+
+    // ===== Cookie Auth =====
+    builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(opts =>
+        {
+            opts.LoginPath = "/Account/Login";
+            opts.LogoutPath = "/Account/Logout";
+            opts.ExpireTimeSpan = TimeSpan.FromHours(8);
+            opts.SlidingExpiration = true;
+            opts.Cookie.Name = ".SecurityAwareness.Auth";
+            opts.Cookie.HttpOnly = true;
+            opts.Cookie.SameSite = SameSiteMode.Lax;
+            opts.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+                ? CookieSecurePolicy.SameAsRequest
+                : CookieSecurePolicy.Always;
+            opts.AccessDeniedPath = "/Account/Login";
+            opts.ReturnUrlParameter = "returnUrl";
+        });
+    builder.Services.AddAuthorization(opts =>
     {
-        opts.LoginPath = "/Account/Login";
-        opts.LogoutPath = "/Account/Logout";
-        opts.ExpireTimeSpan = TimeSpan.FromHours(8);
-        opts.SlidingExpiration = true;
+        opts.AddPolicy("Admin", p => p.RequireRole("Admin"));
+        opts.AddPolicy("Operator", p => p.RequireRole("Admin", "Operator"));
+        opts.AddPolicy("Auditor", p => p.RequireRole("Admin", "Auditor"));
     });
-builder.Services.AddAuthorization(opts =>
-{
-    opts.AddPolicy("Admin", p => p.RequireRole("Admin"));
-    opts.AddPolicy("Operator", p => p.RequireRole("Admin", "Operator"));
-    opts.AddPolicy("Auditor", p => p.RequireRole("Admin", "Auditor"));
-});
 
-// ===== MVC + Razor =====
-builder.Services.AddControllersWithViews(options =>
-{
-    options.Filters.Add<AuditActionFilter>();
-});
-builder.Services.AddScoped<AuditActionFilter>();
+    // ===== Rate limiting (brute-force protection on login) =====
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0
+                }));
+        options.RejectionStatusCode = 429;
+    });
 
-// ===== App services =====
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+    // ===== DataProtection keys persisted to disk (IIS multi-instance safe) =====
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(
+            Path.Combine(builder.Environment.ContentRootPath, "..", "..", "..", "DataProtection-Keys")))
+        .SetApplicationName("SecurityAwareness2");
 
-// ===== Background services =====
-builder.Services.AddHostedService<EmailDispatcherService>();
-builder.Services.AddHostedService<CampaignSchedulerService>();
+    // ===== MVC + Razor =====
+    builder.Services.AddControllersWithViews(options =>
+    {
+        options.Filters.Add<AuditActionFilter>();
+    });
+    builder.Services.AddScoped<AuditActionFilter>();
 
-var app = builder.Build();
+    // ===== App services =====
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
-// ===== Initialize DB (apply migrations + seed admin) =====
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AwarenessDbContext>();
-    await DbInitializer.InitializeAsync(db, scope.ServiceProvider);
+    // ===== Health checks =====
+    builder.Services.AddHealthChecks()
+        .AddDbContextCheck<AwarenessDbContext>("database", tags: new[] { "ready" });
+
+    // ===== Background services =====
+    builder.Services.AddHostedService<EmailDispatcherService>();
+    builder.Services.AddHostedService<CampaignSchedulerService>();
+    builder.Services.AddHostedService<QuotaResetService>();
+    builder.Services.AddHostedService<CampaignLifecycleService>();
+
+    var app = builder.Build();
+
+    // ===== Initialize DB (apply migrations + seed admin) =====
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AwarenessDbContext>();
+        await DbInitializer.InitializeAsync(db, scope.ServiceProvider);
+    }
+
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Home/Error");
+    }
+
+    app.UseStaticFiles();
+    app.UseRouting();
+    app.UseRateLimiter();
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllerRoute(
+        name: "areas",
+        pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
+
+    app.MapControllerRoute(
+        name: "tracking",
+        pattern: "r/{token}",
+        defaults: new { controller = "Tracking", action = "Index" });
+
+    app.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Account}/{action=Login}/{id?}");
+
+    // Health endpoints
+    app.MapHealthChecks("/health/live");
+    app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("ready") || check.Name == "database"
+    });
+
+    app.Run();
 }
-
-if (!app.Environment.IsDevelopment())
+catch (Exception ex)
 {
-    app.UseExceptionHandler("/Home/Error");
+    Log.Fatal(ex, "Application terminated unexpectedly");
 }
-
-app.UseStaticFiles();
-app.UseRouting();
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllerRoute(
-    name: "areas",
-    pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
-
-app.MapControllerRoute(
-    name: "tracking",
-    pattern: "r/{token}",
-    defaults: new { controller = "Tracking", action = "Index" });
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Account}/{action=Login}/{id?}");
-
-app.Run();
+finally
+{
+    Log.CloseAndFlush();
+}
 
 public partial class Program { }

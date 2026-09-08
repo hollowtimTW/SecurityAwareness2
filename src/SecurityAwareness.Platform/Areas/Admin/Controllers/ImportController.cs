@@ -134,4 +134,42 @@ public class ImportController : Controller
         var bytes = Encoding.UTF8.GetBytes(sb.ToString());
         return File(bytes, "text/csv; charset=utf-8", $"tracking-links-{campaignId}.csv");
     }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportReport(int campaignId, CancellationToken ct)
+    {
+        var c = await _campaigns.GetByIdAsync(campaignId, ct);
+        if (c is null) return NotFound();
+        var assignments = await _assignments.GetByCampaignAsync(campaignId, ct);
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"活動代碼,標題,起訖,狀態");
+        sb.AppendLine($"{CsvHelper.Escape(c.Code)},{CsvHelper.Escape(c.Title)},{c.StartAt:yyyy-MM-dd HH:mm}~{c.EndAt:yyyy-MM-dd HH:mm},{(byte)c.Status}");
+        sb.AppendLine();
+        sb.AppendLine("指派人數,已派,已點擊,已回報,點擊率,回報率");
+        var total = assignments.Count;
+        var clicked = assignments.Count(a => a.Status >= 2);
+        var reported = assignments.Count(a => a.Status == 3);
+        sb.AppendLine($"{total},{assignments.Count(a => a.Status >= 1)},{clicked},{reported},{(total == 0 ? 0 : 100.0 * clicked / total):F1}%,{(total == 0 ? 0 : 100.0 * reported / total):F1}%");
+        sb.AppendLine();
+        sb.AppendLine("員工編號,姓名,Email,部門,狀態,點擊次數,寄出時間,首次點擊,回報時間");
+        foreach (var a in assignments)
+        {
+            var e = a.Employee;
+            sb.AppendLine(string.Join(",", new[]
+            {
+                CsvHelper.Escape(e?.EmployeeNo ?? ""),
+                CsvHelper.Escape(e?.DisplayName ?? ""),
+                CsvHelper.Escape(e?.Email ?? ""),
+                CsvHelper.Escape(e?.Department?.Code ?? ""),
+                a.Status.ToString(),
+                a.ClickCount.ToString(),
+                a.DispatchedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                a.FirstClickedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                a.ReportedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? ""
+            }));
+        }
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        return File(bytes, "text/csv; charset=utf-8", $"report-{c.Code}.csv");
+    }
 }

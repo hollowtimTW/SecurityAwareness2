@@ -26,7 +26,20 @@
                     <td>@m.DailyQuota</td>
                     <td>@m.DailyQuotaUsed</td>
                     <td>@(m.IsActive ? "✅" : "❌")</td>
-                    <td><a class="btn btn-sm btn-outline-primary" href="@Url.Action("Edit", new { id = m.SenderMailboxId })">編輯</a></td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Edit", new { id = m.SenderMailboxId })">編輯</a>
+                        <form method="post" action="@Url.Action("ToggleActive", new { id = m.SenderMailboxId })" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-outline-@(m.IsActive ? "warning" : "success")">
+                                @(m.IsActive ? "停用" : "啟用")
+                            </button>
+                        </form>
+                        <form method="post" action="@Url.Action("Delete", new { id = m.SenderMailboxId })" class="d-inline"
+                              onsubmit="return confirm('確定刪除 @m.Email?');">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-outline-danger">刪除</button>
+                        </form>
+                    </td>
                 </tr>
             }
             @if (Model.Count == 0)

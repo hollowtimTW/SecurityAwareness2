@@ -30,6 +30,12 @@ public class SenderMailboxRepository : ISenderMailboxRepository
         return Task.CompletedTask;
     }
 
+    public Task DeleteAsync(SenderMailbox mailbox, CancellationToken ct = default)
+    {
+        _db.SenderMailboxes.Remove(mailbox);
+        return Task.CompletedTask;
+    }
+
     public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
         => _db.SenderMailboxes.AnyAsync(m => m.Email == email, ct);
 
