@@ -11,6 +11,9 @@ public interface ICampaignService
     Task StartAsync(int campaignId, CancellationToken ct = default);
     Task EndAsync(int campaignId, CancellationToken ct = default);
 
+    /// <summary>Returns active departments for the campaign-creation department picker.</summary>
+    Task<IReadOnlyList<Department>> GetDepartmentsAsync(CancellationToken ct = default);
+
     /// <summary>
     /// Generate TrackingTokens + TokenUrls for all active employees and add Assignments.
     /// </summary>

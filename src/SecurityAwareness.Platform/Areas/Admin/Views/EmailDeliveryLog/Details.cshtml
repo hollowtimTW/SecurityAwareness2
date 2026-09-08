@@ -1,0 +1,91 @@
+@model SecurityAwareness.Infrastructure.Entities.EmailDeliveryLog
+@{ ViewData["Title"] = $"寄信紀錄 #{Model.LogId}"; }
+
+<h2>📧 寄信紀錄 #@Model.LogId</h2>
+
+<div class="card card-body mb-3">
+    <dl class="row mb-0">
+        <dt class="col-sm-2">狀態</dt>
+        <dd class="col-sm-10">
+            @{
+                var cls = ViewBag.Status switch
+                {
+                    "Success" => "bg-success",
+                    "Failed" => "bg-danger",
+                    _ => "bg-secondary"
+                };
+            }
+            <span class="badge @cls">@ViewBag.Status</span>
+        </dd>
+
+        <dt class="col-sm-2">主旨</dt>
+        <dd class="col-sm-10">@ViewBag.Subject</dd>
+
+        <dt class="col-sm-2">收件人</dt>
+        <dd class="col-sm-10"><strong>@ViewBag.ToName</strong> &lt;<a href="mailto:@ViewBag.ToEmail">@ViewBag.ToEmail</a>&gt;</dd>
+
+        <dt class="col-sm-2">寄件匣</dt>
+        <dd class="col-sm-10"><code>@ViewBag.Mailbox</code></dd>
+
+        <dt class="col-sm-2">活動</dt>
+        <dd class="col-sm-10">
+            @if (!string.IsNullOrEmpty((string?)ViewBag.CampaignCode))
+            {
+                <code>@ViewBag.CampaignCode</code><span> &mdash; @ViewBag.CampaignTitle</span>
+            }
+            else
+            {
+                <span class="text-muted">—</span>
+            }
+        </dd>
+
+        <dt class="col-sm-2">寄送時間</dt>
+        <dd class="col-sm-10">
+            @if (ViewBag.SentAt != null)
+            {
+                @(((DateTime?)ViewBag.SentAt)?.ToString("yyyy-MM-dd HH:mm:ss"))
+            }
+            else
+            {
+                <span class="text-muted">未寄出</span>
+            }
+        </dd>
+
+        <dt class="col-sm-2">記錄時間</dt>
+        <dd class="col-sm-10">@(((DateTime)ViewBag.CreatedAt).ToString("yyyy-MM-dd HH:mm:ss"))</dd>
+
+        <dt class="col-sm-2">嘗試次數</dt>
+        <dd class="col-sm-10">@ViewBag.AttemptCount</dd>
+
+        <dt class="col-sm-2">Provider 訊息 ID</dt>
+        <dd class="col-sm-10"><code>@(ViewBag.ProviderMessageId ?? "—")</code></dd>
+
+        @if (ViewBag.Error != null)
+        {
+            <dt class="col-sm-2">錯誤訊息</dt>
+            <dd class="col-sm-10"><pre class="bg-light p-2 mb-0">@ViewBag.Error</pre></dd>
+        }
+
+        @if (ViewBag.AssignmentId > 0 && ViewBag.TrackingUrl != null)
+        {
+            <dt class="col-sm-2">追蹤連結</dt>
+            <dd class="col-sm-10">
+                <a href="@ViewBag.TrackingUrl" target="_blank" class="btn btn-sm btn-outline-secondary">@ViewBag.TrackingUrl</a>
+            </dd>
+        }
+    </dl>
+</div>
+
+@if (ViewBag.Status != "Success")
+{
+    <form method="post" action="@Url.Action("Resend", new { id = Model.LogId })" class="mb-3">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-warning" onclick="return confirm('確定要將此信件重設為 Pending,下次 Dispatch 會重寄嗎?');">
+            🔁 重設為 Pending (下次 Dispatch 重寄)
+        </button>
+    </form>
+}
+
+<div class="mt-3">
+    <a class="btn btn-outline-secondary" href="@Url.Action("Index")">« 返回列表</a>
+</div>

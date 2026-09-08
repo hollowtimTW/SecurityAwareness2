@@ -48,14 +48,16 @@ public class CampaignController : Controller
 
     [HttpGet]
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Operator")]
-    public IActionResult Create()
+    public async Task<IActionResult> Create(CancellationToken ct)
     {
         var now = DateTime.Now;
+        var depts = await _service.GetDepartmentsAsync(ct);
         var vm = new CampaignEditViewModel
         {
             StartAt = now.AddMinutes(1),
             EndAt = now.AddDays(7),
-            BaseUrl = _trackingOptions.Value.BaseUrl
+            BaseUrl = _trackingOptions.Value.BaseUrl,
+            Departments = depts.Select(d => new DepartmentOption(d.DepartmentId, d.Code, d.Name)).ToList()
         };
         return View(vm);
     }
@@ -65,6 +67,9 @@ public class CampaignController : Controller
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Operator")]
     public async Task<IActionResult> Create(CampaignEditViewModel vm, CancellationToken ct)
     {
+        var depts = await _service.GetDepartmentsAsync(ct);
+        vm.Departments = depts.Select(d => new DepartmentOption(d.DepartmentId, d.Code, d.Name)).ToList();
+
         var actor = User.Identity?.Name ?? "system";
         var c = new PhishingCampaign
         {
@@ -72,18 +77,81 @@ public class CampaignController : Controller
             Title = vm.Title,
             Description = vm.Description,
             StartAt = vm.StartAt,
-            EndAt = vm.EndAt
+            EndAt = vm.EndAt,
+            TargetDepartmentIds = vm.SelectedDepartmentIds.Length == 0
+                ? null
+                : System.Text.Json.JsonSerializer.Serialize(vm.SelectedDepartmentIds)
         };
         try
         {
-            await _service.CreateAsync(c, actor, ct);
-            TempData["Message"] = $"活動 {c.Title} 已建立(狀態:Draft)";
+            var created = await _service.CreateAsync(c, actor, ct);
+            var scope = vm.SelectedDepartmentIds.Length == 0
+                ? "全部員工"
+                : $"選定的 {vm.SelectedDepartmentIds.Length} 個部門";
+            TempData["Message"] = $"活動 {created.Title} 已建立(狀態:Draft,受測範圍:{scope})";
             return RedirectToAction(nameof(Index));
         }
         catch (Exception ex)
         {
             ModelState.AddModelError("", ex.Message);
             return View(vm);
+        }
+    }
+
+    [HttpGet]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Operator")]
+    public async Task<IActionResult> Edit(int id, CancellationToken ct)
+    {
+        var c = await _service.GetByIdAsync(id, ct);
+        if (c is null) return NotFound();
+        var depts = await _service.GetDepartmentsAsync(ct);
+        int[] selected = string.IsNullOrWhiteSpace(c.TargetDepartmentIds)
+            ? Array.Empty<int>()
+            : SecurityAwareness.Application.Services.CampaignService.ParseIntList(c.TargetDepartmentIds).ToArray();
+
+        var vm = new CampaignEditViewModel
+        {
+            CampaignId = c.CampaignId,
+            Code = c.Code,
+            Title = c.Title,
+            Description = c.Description,
+            StartAt = c.StartAt,
+            EndAt = c.EndAt,
+            BaseUrl = _trackingOptions.Value.BaseUrl,
+            SelectedDepartmentIds = selected,
+            Departments = depts.Select(d => new DepartmentOption(d.DepartmentId, d.Code, d.Name)).ToList()
+        };
+        return View("Create", vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Operator")]
+    public async Task<IActionResult> Edit(int id, CampaignEditViewModel vm, CancellationToken ct)
+    {
+        var depts = await _service.GetDepartmentsAsync(ct);
+        vm.Departments = depts.Select(d => new DepartmentOption(d.DepartmentId, d.Code, d.Name)).ToList();
+
+        var c = await _service.GetByIdAsync(id, ct);
+        if (c is null) return NotFound();
+        c.Code = vm.Code;
+        c.Title = vm.Title;
+        c.Description = vm.Description;
+        c.StartAt = vm.StartAt;
+        c.EndAt = vm.EndAt;
+        c.TargetDepartmentIds = vm.SelectedDepartmentIds.Length == 0
+            ? null
+            : System.Text.Json.JsonSerializer.Serialize(vm.SelectedDepartmentIds);
+        try
+        {
+            await _service.UpdateAsync(c, ct);
+            TempData["Message"] = $"活動 #{id} 已更新";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View("Create", vm);
         }
     }
 

@@ -17,5 +17,6 @@ public class PhishingCampaignConfiguration : IEntityTypeConfiguration<PhishingCa
         builder.Property(x => x.Description).HasMaxLength(500);
         builder.Property(x => x.Status).IsRequired();
         builder.Property(x => x.CreatedBy).HasMaxLength(50).IsRequired();
+        builder.Property(x => x.TargetDepartmentIds).HasMaxLength(500);
     }
 }

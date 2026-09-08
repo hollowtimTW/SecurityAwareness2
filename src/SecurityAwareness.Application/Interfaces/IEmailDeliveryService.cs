@@ -11,8 +11,12 @@ public sealed record EmailSendOutcome(
 
 /// <summary>
 /// Plain DTO for an email to send.
+/// AssignmentId links the delivery log back to the campaign assignment
+/// so the EmailDeliveryLog UI can show which employee was targeted.
 /// </summary>
 public sealed record EmailMessage(
+    int AssignmentId,
+    int MailboxId,
     string MessageId,
     string SenderUpn,
     string SenderDisplayName,

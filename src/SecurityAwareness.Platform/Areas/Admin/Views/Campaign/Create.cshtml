@@ -1,13 +1,13 @@
 @model SecurityAwareness.Platform.ViewModels.CampaignEditViewModel
-@{ ViewData["Title"] = "新增活動"; }
-<h2>📋 新增演練活動</h2>
-<form method="post" class="card card-body" style="max-width: 720px;">
+@{ ViewData["Title"] = Model.CampaignId.HasValue ? "編輯活動" : "新增活動"; }
+<h2>📋 @ViewData["Title"]</h2>
+<form method="post" class="card card-body" style="max-width: 800px;">
     @Html.AntiForgeryToken()
     <div class="row g-3">
         <div class="col-md-6">
             <label class="form-label">Code *</label>
-            <input class="form-control" name="Code" value="@Model.Code" placeholder="例: PHISH-Q3-2026" required />
-            <small class="text-muted">需唯一,英數與 - 為主</small>
+            <input class="form-control" name="Code" value="@Model.Code" placeholder="例: HR-Q3-2026" required />
+            <small class="text-muted">需唯一,英數與 - 為主。前綴決定信件模板:HR/CEO/IT/...</small>
         </div>
         <div class="col-md-6">
             <label class="form-label">標題 *</label>
@@ -27,10 +27,52 @@
             <input class="form-control" type="datetime-local" name="EndAt"
                    value="@Model.EndAt.ToString("yyyy-MM-ddTHH:mm")" required />
         </div>
+
+        <div class="col-12">
+            <label class="form-label">🎯 受測部門 (選 0~N;不選 = 全部員工)</label>
+            <div class="border rounded p-3 bg-light">
+                @if (Model.Departments.Count == 0)
+                {
+                    <p class="text-muted mb-0">尚未建立任何部門。可至「部門維護」新增。</p>
+                }
+                else
+                {
+                    <div class="row g-2">
+                        @foreach (var d in Model.Departments)
+                        {
+                            var isChecked = Model.SelectedDepartmentIds.Contains(d.DepartmentId);
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="SelectedDepartmentIds" value="@d.DepartmentId"
+                                           id="dept_@d.DepartmentId" @(isChecked ? "checked" : "") />
+                                    <label class="form-check-label" for="dept_@d.DepartmentId">
+                                        <strong>@d.Code</strong> — @d.Name
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+            <small class="text-muted mt-1 d-block">
+                啟動活動時,只會為選定部門下的員工自動產生追蹤連結。其餘部門的員工不會被加入此活動。
+            </small>
+        </div>
     </div>
     <div class="mt-3 d-flex gap-2">
-        <button type="submit" class="btn btn-primary">建立(Draft)</button>
+        <button type="submit" class="btn btn-primary">
+            @(Model.CampaignId.HasValue ? "儲存變更" : "建立(Draft)")
+        </button>
         <a class="btn btn-outline-secondary" href="@Url.Action("Index")">取消</a>
     </div>
-    <p class="text-muted small mt-3 mb-0">建立後狀態為 Draft,點 [啟動] 才會自動產生每位員工的追蹤連結。</p>
+    @if (Model.CampaignId.HasValue)
+    {
+        <p class="text-muted small mt-3 mb-0">
+            ⚠️ 編輯已啟動的活動時,部門變更只會影響「尚未指派」的員工,既有指派不會被移除。
+        </p>
+    }
+    else
+    {
+        <p class="text-muted small mt-3 mb-0">建立後狀態為 Draft,點 [啟動] 才會根據選定部門自動產生每位員工的追蹤連結。</p>
+    }
 </form>

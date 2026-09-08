@@ -24,6 +24,7 @@
                         <a class="nav-link" href="@Url.Action("Index", "Schedule", new { area = "Admin" })">排程</a>
                         <a class="nav-link" href="@Url.Action("Index", "Report", new { area = "Admin" })">報表</a>
                         <a class="nav-link" href="@Url.Action("Index", "AuditLog", new { area = "Admin" })">稽核</a>
+                        <a class="nav-link" href="@Url.Action("Index", "EmailDeliveryLog", new { area = "Admin" })">📧 寄信紀錄</a>
                     </div>
                     <span class="navbar-text me-3">@User.Identity!.Name</span>
                     <form method="post" action="/Account/Logout" class="d-inline">

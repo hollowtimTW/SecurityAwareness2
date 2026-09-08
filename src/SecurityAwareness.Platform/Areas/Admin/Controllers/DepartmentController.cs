@@ -10,7 +10,13 @@ namespace SecurityAwareness.Platform.Areas.Admin.Controllers;
 public class DepartmentController : Controller
 {
     private readonly IDepartmentService _service;
-    public DepartmentController(IDepartmentService service) => _service = service;
+    private readonly IEmployeeService _employees;
+
+    public DepartmentController(IDepartmentService service, IEmployeeService employees)
+    {
+        _service = service;
+        _employees = employees;
+    }
 
     public async Task<IActionResult> Index(CancellationToken ct)
     {
@@ -20,20 +26,82 @@ public class DepartmentController : Controller
 
     [HttpGet]
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-    public IActionResult Create() => View(new DepartmentListItemViewModel(0, "", "", true));
+    public async Task<IActionResult> Create(CancellationToken ct)
+    {
+        var vm = new DepartmentEditViewModel
+        {
+            IsActive = true
+        };
+        await LoadSelectsAsync(vm, ct);
+        return View(vm);
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Create(string code, string name, CancellationToken ct)
+    public async Task<IActionResult> Create(DepartmentEditViewModel vm, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(vm.Code) || string.IsNullOrWhiteSpace(vm.Name))
         {
             ModelState.AddModelError("", "代碼與名稱為必填");
-            return View(new DepartmentListItemViewModel(0, code, name, true));
+            await LoadSelectsAsync(vm, ct);
+            return View(vm);
         }
-        await _service.CreateAsync(new Department { Code = code, Name = name }, ct);
-        TempData["Message"] = $"部門 {name} 已新增";
+        var d = new Department
+        {
+            Code = vm.Code,
+            Name = vm.Name,
+            IsActive = vm.IsActive,
+            ManagerEmployeeId = vm.ManagerEmployeeId
+        };
+        await _service.CreateAsync(d, ct);
+        TempData["Message"] = $"部門 {vm.Name} 已新增";
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Edit(int id, CancellationToken ct)
+    {
+        var d = await _service.GetByIdAsync(id, ct);
+        if (d is null) return NotFound();
+        var vm = new DepartmentEditViewModel
+        {
+            DepartmentId = d.DepartmentId,
+            Code = d.Code,
+            Name = d.Name,
+            IsActive = d.IsActive,
+            ManagerEmployeeId = d.ManagerEmployeeId
+        };
+        await LoadSelectsAsync(vm, ct);
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Edit(int id, DepartmentEditViewModel vm, CancellationToken ct)
+    {
+        var d = await _service.GetByIdAsync(id, ct);
+        if (d is null) return NotFound();
+        d.Code = vm.Code;
+        d.Name = vm.Name;
+        d.IsActive = vm.IsActive;
+        d.ManagerEmployeeId = vm.ManagerEmployeeId;
+        await _service.UpdateAsync(d, ct);
+        TempData["Message"] = $"部門 {vm.Name} 已更新";
+        return RedirectToAction(nameof(Index));
+    }
+
+    private async Task LoadSelectsAsync(DepartmentEditViewModel vm, CancellationToken ct)
+    {
+        var depts = await _service.GetAllAsync(ct);
+        vm.Departments = depts.Select(d => new DepartmentOption(d.DepartmentId, d.Code, d.Name)).ToList();
+
+        var employees = await _employees.GetAllAsync(ct);
+        vm.Managers = employees.Where(e => e.IsActive)
+            .OrderBy(e => e.EmployeeNo)
+            .Select(e => new ManagerOption(e.EmployeeId, e.EmployeeNo, e.DisplayName))
+            .ToList();
     }
 }

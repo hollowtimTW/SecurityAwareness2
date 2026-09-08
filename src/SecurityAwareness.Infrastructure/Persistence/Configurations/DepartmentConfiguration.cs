@@ -15,5 +15,8 @@ public class DepartmentConfiguration : IEntityTypeConfiguration<Department>
         builder.HasIndex(x => x.Code).IsUnique();
         builder.Property(x => x.Name).HasMaxLength(60).IsRequired();
         builder.Property(x => x.IsActive).IsRequired();
+        builder.Property(x => x.ManagerEmployeeId);
+        // Map navigation explicitly so EF doesn't invent a shadow FK
+        builder.HasOne(x => x.Manager).WithMany().HasForeignKey(x => x.ManagerEmployeeId).OnDelete(DeleteBehavior.Restrict);
     }
 }

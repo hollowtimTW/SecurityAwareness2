@@ -10,6 +10,7 @@ public class CampaignService : ICampaignService
     private readonly ICampaignRepository _campaigns;
     private readonly IAssignmentRepository _assignments;
     private readonly IEmployeeRepository _employees;
+    private readonly IDepartmentRepository _departments;
     private readonly ISenderMailboxRepository _mailboxes;
     private readonly IEmailQueueChannel _queue;
     private readonly EmailMessageRenderer _renderer;
@@ -20,6 +21,7 @@ public class CampaignService : ICampaignService
         ICampaignRepository campaigns,
         IAssignmentRepository assignments,
         IEmployeeRepository employees,
+        IDepartmentRepository departments,
         ISenderMailboxRepository mailboxes,
         IEmailQueueChannel queue,
         EmailMessageRenderer renderer,
@@ -29,12 +31,16 @@ public class CampaignService : ICampaignService
         _campaigns = campaigns;
         _assignments = assignments;
         _employees = employees;
+        _departments = departments;
         _mailboxes = mailboxes;
         _queue = queue;
         _renderer = renderer;
         _audit = audit;
         _logger = logger;
     }
+
+    public async Task<IReadOnlyList<Department>> GetDepartmentsAsync(CancellationToken ct = default)
+        => await _departments.GetAllAsync(ct);
 
     public async Task<IReadOnlyList<PhishingCampaign>> GetAllAsync(CancellationToken ct = default)
         => await _campaigns.GetAllAsync(ct);
@@ -111,6 +117,15 @@ public class CampaignService : ICampaignService
             ?? throw new InvalidOperationException($"Campaign {campaignId} not found.");
 
         var employees = await _employees.GetActiveAsync(ct);
+
+        // Optional department filter from Campaign.TargetDepartmentIds (JSON int[])
+        if (!string.IsNullOrWhiteSpace(c.TargetDepartmentIds))
+        {
+            var allowed = ParseIntList(c.TargetDepartmentIds);
+            if (allowed.Count > 0)
+                employees = employees.Where(e => allowed.Contains(e.DepartmentId)).ToList();
+        }
+
         var existing = await _assignments.GetByCampaignAsync(campaignId, ct);
         var existingSet = existing.Select(a => a.EmployeeId).ToHashSet();
 
@@ -135,6 +150,21 @@ public class CampaignService : ICampaignService
         }
         _logger.LogInformation("Created {Count} assignments for Campaign {Id}", toAdd.Count, campaignId);
         return toAdd.Count;
+    }
+
+    public static IReadOnlyList<int> ParseIntList(string csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) return Array.Empty<int>();
+        if (csv.TrimStart().StartsWith('['))
+        {
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<List<int>>(csv) ?? new();
+            }
+            catch { /* fall through */ }
+        }
+        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(int.Parse).ToList();
     }
 
     public async Task<int> DispatchAsync(int campaignId, IReadOnlyList<int> mailboxIds, CancellationToken ct = default)
@@ -170,15 +200,8 @@ public class CampaignService : ICampaignService
 
             var email = _renderer.Render(campaign, assignment, employee, mailbox, baseUrl);
             await _queue.Writer.WriteAsync(email, ct);
-
-            // Mark Dispatched and timestamp
-            assignment.Status = (byte)Common.Enums.AssignmentStatus.Dispatched;
-            assignment.DispatchedAt = DateTime.Now;
-            await _assignments.UpdateAsync(assignment, ct);
-
             queued++;
         }
-        await _assignments.SaveChangesAsync(ct);
         await _audit.WriteAsync("Dispatch", "Campaign", campaignId.ToString(), "system",
             $"queued={queued}, mailboxes=[{string.Join(",", selectedMailboxes.Select(m => m.Email))}]", ct);
         _logger.LogInformation("Dispatched Campaign {Id}: queued {Count}", campaignId, queued);

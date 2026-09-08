@@ -21,6 +21,19 @@ public sealed record DepartmentOption(int DepartmentId, string Code, string Name
 
 public sealed record DepartmentListItemViewModel(int DepartmentId, string Code, string Name, bool IsActive);
 
+public sealed class DepartmentEditViewModel
+{
+    public int DepartmentId { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+    public int? ManagerEmployeeId { get; set; }
+    public IReadOnlyList<DepartmentOption> Departments { get; set; } = new List<DepartmentOption>();
+    public IReadOnlyList<ManagerOption> Managers { get; set; } = new List<ManagerOption>();
+}
+
+public sealed record ManagerOption(int EmployeeId, string EmployeeNo, string DisplayName);
+
 public sealed record CampaignListItemViewModel(
     int CampaignId, string Code, string Title, DateTime StartAt, DateTime EndAt,
     string Status, int AssignmentCount, int ClickCount, DateTime CreatedAt);
@@ -34,6 +47,9 @@ public sealed class CampaignEditViewModel
     public DateTime StartAt { get; set; }
     public DateTime EndAt { get; set; }
     public string? BaseUrl { get; set; }
+    /// <summary>Selected department ids; empty/all = all active employees.</summary>
+    public int[] SelectedDepartmentIds { get; set; } = Array.Empty<int>();
+    public IReadOnlyList<DepartmentOption> Departments { get; set; } = new List<DepartmentOption>();
 }
 
 public sealed record CampaignAssignmentsViewModel(
@@ -58,6 +74,7 @@ public sealed class MailboxEditViewModel
     public int DailyQuota { get; set; } = 500;
     public int DailyQuotaUsed { get; set; }
     public bool IsActive { get; set; } = true;
+    public IReadOnlyList<SelectOption> Providers { get; set; } = new List<SelectOption>();
 }
 
 public sealed record DispatchViewModel(
@@ -102,7 +119,13 @@ public sealed class ScheduleEditViewModel
     public DateTime StartAt { get; set; }
     public DateTime? EndAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public IReadOnlyList<CampaignOption> Campaigns { get; set; } = new List<CampaignOption>();
+    public IReadOnlyList<SelectOption> ScheduleTypes { get; set; } = new List<SelectOption>();
 }
+
+public sealed record CampaignOption(int CampaignId, string Code, string Title);
+
+public sealed record SelectOption(byte Value, string Text);
 
 public sealed class ReportDashboardViewModel
 {
@@ -131,3 +154,17 @@ public sealed record AuditLogPageViewModel(
     int Page, int PageSize, int TotalPages,
     string? FilterEntityType, string? FilterAction,
     string? FilterActorKey, DateTime? FilterFromUtc, DateTime? FilterToUtc);
+
+public sealed record EmailDeliveryRow(
+    long LogId, DateTime CreatedAt, DateTime? SentAt,
+    string Subject, string ToEmail, string ToDisplayName,
+    string? CampaignCode, string SenderMailboxEmail,
+    string Status, string? ErrorDetail, int AttemptCount);
+
+public sealed record EmailDeliveryPageViewModel(
+    IReadOnlyList<EmailDeliveryRow> Items, int TotalCount,
+    int Page, int PageSize, int TotalPages,
+    int? CampaignId, byte? Status, int? MailboxId,
+    IReadOnlyList<CampaignOption> Campaigns,
+    IReadOnlyList<MailboxOption> Mailboxes,
+    IReadOnlyList<SelectOption> StatusOptions);

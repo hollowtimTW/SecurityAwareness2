@@ -24,14 +24,33 @@ public class SenderMailboxController : Controller
 
     [HttpGet]
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-    public IActionResult Create() => View(new MailboxEditViewModel());
+    public IActionResult Create()
+    {
+        var vm = new MailboxEditViewModel();
+        vm.Providers = new List<SelectOption>
+        {
+            new(0, "Fake (寫 .eml 到本機)"),
+            new(1, "Graph (M365)"),
+            new(2, "SMTP")
+        };
+        return View(vm);
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(MailboxEditViewModel vm, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View(vm);
+        if (!ModelState.IsValid)
+        {
+            vm.Providers = new List<SelectOption>
+            {
+                new(0, "Fake (寫 .eml 到本機)"),
+                new(1, "Graph (M365)"),
+                new(2, "SMTP")
+            };
+            return View(vm);
+        }
         var m = new SenderMailbox
         {
             Email = vm.Email,
@@ -50,7 +69,7 @@ public class SenderMailboxController : Controller
     {
         var m = await _service.GetByIdAsync(id, ct);
         if (m is null) return NotFound();
-        return View(new MailboxEditViewModel
+        var vm = new MailboxEditViewModel
         {
             SenderMailboxId = m.SenderMailboxId,
             Email = m.Email,
@@ -58,8 +77,15 @@ public class SenderMailboxController : Controller
             Provider = m.Provider,
             DailyQuota = m.DailyQuota,
             DailyQuotaUsed = m.DailyQuotaUsed,
-            IsActive = m.IsActive
-        });
+            IsActive = m.IsActive,
+            Providers = new List<SelectOption>
+            {
+                new(0, "Fake (寫 .eml 到本機)"),
+                new(1, "Graph (M365)"),
+                new(2, "SMTP")
+            }
+        };
+        return View(vm);
     }
 
     [HttpPost]

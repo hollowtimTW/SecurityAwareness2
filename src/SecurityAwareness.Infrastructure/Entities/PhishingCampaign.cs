@@ -16,6 +16,12 @@ public class PhishingCampaign
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
+    /// <summary>
+    /// JSON array of department ids targeted by this campaign.
+    /// Null or empty = all active employees.
+    /// </summary>
+    public string? TargetDepartmentIds { get; set; }
+
     // Navigation
     public ICollection<EmployeeCampaignAssignment> Assignments { get; set; } = new List<EmployeeCampaignAssignment>();
 }

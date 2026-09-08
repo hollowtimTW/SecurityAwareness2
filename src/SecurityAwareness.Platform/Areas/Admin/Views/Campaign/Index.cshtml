@@ -37,6 +37,7 @@
                         <a class="btn btn-sm btn-outline-primary" href="@Url.Action("Assignments", new { id = c.CampaignId })">檢視</a>
                         @if (c.Status == "Draft")
                         {
+                            <a class="btn btn-sm btn-outline-info" href="@Url.Action("Edit", new { id = c.CampaignId })">✏️ 編輯</a>
                             <form method="post" action="@Url.Action("Start", new { id = c.CampaignId })" class="d-inline">
                                 @Html.AntiForgeryToken()
                                 <button class="btn btn-sm btn-success">▶ 啟動</button>

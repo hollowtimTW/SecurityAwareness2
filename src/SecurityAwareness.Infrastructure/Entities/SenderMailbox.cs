@@ -14,4 +14,6 @@ public class SenderMailbox
     public int DailyQuotaUsed { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
+    public DateTime? LastUsedAt { get; set; }
+    public DateTime? QuotaResetAt { get; set; }
 }

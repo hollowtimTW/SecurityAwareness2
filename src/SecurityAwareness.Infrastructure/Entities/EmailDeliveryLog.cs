@@ -15,4 +15,8 @@ public class EmailDeliveryLog
     public int AttemptCount { get; set; } = 1;
     public DateTime? SentAt { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    // Navigation
+    public EmployeeCampaignAssignment? Assignment { get; set; }
+    public SenderMailbox? SenderMailbox { get; set; }
 }

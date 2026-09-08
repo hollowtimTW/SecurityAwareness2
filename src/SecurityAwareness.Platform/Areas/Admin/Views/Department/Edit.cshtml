@@ -1,17 +1,17 @@
 @model SecurityAwareness.Platform.ViewModels.DepartmentEditViewModel
-@{ ViewData["Title"] = "新增部門"; }
-<h2>🏢 新增部門</h2>
+@{ ViewData["Title"] = "編輯部門"; }
+<h2>🏢 編輯部門 #@Model.DepartmentId</h2>
 <form method="post" class="card card-body" style="max-width: 640px;">
     @Html.AntiForgeryToken()
+    <input type="hidden" name="DepartmentId" value="@Model.DepartmentId" />
     <div class="row g-3">
         <div class="col-md-4">
             <label class="form-label">代碼 *</label>
-            <input class="form-control" name="Code" value="@Model.Code" required placeholder="例: SYS" />
-            <small class="text-muted">需唯一</small>
+            <input class="form-control" name="Code" value="@Model.Code" required />
         </div>
         <div class="col-md-8">
             <label class="form-label">名稱 *</label>
-            <input class="form-control" name="Name" value="@Model.Name" required placeholder="例: 系統部" />
+            <input class="form-control" name="Name" value="@Model.Name" required />
         </div>
         <div class="col-12">
             <label class="form-label">部門主管 (選填)</label>
@@ -31,7 +31,7 @@
         </div>
     </div>
     <div class="mt-3 d-flex gap-2">
-        <button class="btn btn-primary">建立</button>
+        <button class="btn btn-primary">儲存</button>
         <a class="btn btn-outline-secondary" href="@Url.Action("Index")">取消</a>
     </div>
 </form>

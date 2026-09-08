@@ -25,9 +25,10 @@ public class CampaignServiceTests
         var assignments = new AssignmentRepository(db);
         var employees = new EmployeeRepository(db);
         var mailboxRepo = new SenderMailboxRepository(db);
+        var departmentRepo = new DepartmentRepository(db);
         var audit = new AuditService(new AuditLogRepository(db), NullLogger<AuditService>.Instance);
         var svc = new CampaignService(
-            campaigns, assignments, employees, mailboxRepo,
+            campaigns, assignments, employees, departmentRepo, mailboxRepo,
             new EmailQueueChannel(), new EmailMessageRenderer(),
             audit, NullLogger<CampaignService>.Instance);
         return (db, svc, mailboxRepo);

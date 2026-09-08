@@ -38,20 +38,50 @@ public class EmailDispatcherService : BackgroundService
             {
                 using var scope = _scopeFactory.CreateScope();
                 var delivery = scope.ServiceProvider.GetRequiredService<IEmailDeliveryService>();
-                var mailboxRepo = scope.ServiceProvider.GetRequiredService<ISenderMailboxRepository>();
+                var logRepo = scope.ServiceProvider.GetRequiredService<IEmailDeliveryLogRepository>();
                 var assignmentRepo = scope.ServiceProvider.GetRequiredService<IAssignmentRepository>();
+                var mailboxRepo = scope.ServiceProvider.GetRequiredService<ISenderMailboxRepository>();
 
-                // Find the assignment by RecipientEmail + tracking token in subject/body (simple: by message-id)
                 var outcome = await delivery.SendAsync(msg, stoppingToken);
 
-                // Find assignment by looking up the message id (we used it as the Subject message-id, but for simplicity skip)
-                // For now just log + write EmailDeliveryLog if we can find the assignment
+                // Persist EmailDeliveryLog
+                var mailbox = await mailboxRepo.GetByIdAsync(msg.MailboxId, stoppingToken);
+                var log = new EmailDeliveryLog
+                {
+                    AssignmentId = msg.AssignmentId,
+                    SenderMailboxId = msg.MailboxId,
+                    Subject = msg.Subject,
+                    Status = (byte)(outcome.Success ? 0 : 1), // 0=Success, 1=Failed
+                    ProviderMessageId = outcome.Success ? msg.MessageId : null,
+                    ErrorDetail = outcome.Error,
+                    AttemptCount = 1,
+                    SentAt = outcome.Success ? DateTime.UtcNow : null,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await logRepo.AddAsync(log, stoppingToken);
+                await logRepo.SaveChangesAsync(stoppingToken);
 
-                _logger.LogInformation("Email dispatched: {Subject} → {To}, success={Success}, error={Error}",
-                    msg.Subject, msg.ToEmail, outcome.Success, outcome.Error);
+                // Update Assignment status + DispatchedAt on success
+                if (outcome.Success && mailbox is not null)
+                {
+                    var assignment = await assignmentRepo.GetByIdAsync(msg.AssignmentId, stoppingToken);
+                    if (assignment is not null)
+                    {
+                        assignment.Status = (byte)Common.Enums.AssignmentStatus.Dispatched;
+                        assignment.DispatchedAt = DateTime.Now;
+                        await assignmentRepo.UpdateAsync(assignment, stoppingToken);
+                        await assignmentRepo.SaveChangesAsync(stoppingToken);
 
-                // Optional: increment quota
-                // We don't have assignment-id binding here (the message itself doesn't carry it), so we log only.
+                        // Increment mailbox quota
+                        mailbox.DailyQuotaUsed++;
+                        mailbox.LastUsedAt = DateTime.UtcNow;
+                        await mailboxRepo.UpdateAsync(mailbox, stoppingToken);
+                        await mailboxRepo.SaveChangesAsync(stoppingToken);
+                    }
+                }
+
+                _logger.LogInformation("Email dispatched: {Subject} → {To}, success={Success}, error={Error}, logId={LogId}",
+                    msg.Subject, msg.ToEmail, outcome.Success, outcome.Error, log.LogId);
             }
             catch (Exception ex)
             {

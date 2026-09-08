@@ -25,6 +25,8 @@ public class EmailMessageRenderer
         var html = ReplaceTokens(template.Html, campaign, employee, trackingUrl);
 
         return new EmailMessage(
+            AssignmentId: assignment.AssignmentId,
+            MailboxId: mailbox.SenderMailboxId,
             MessageId: messageId,
             SenderUpn: mailbox.Email,
             SenderDisplayName: mailbox.DisplayName,
