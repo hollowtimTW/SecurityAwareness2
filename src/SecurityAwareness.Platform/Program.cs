@@ -35,6 +35,12 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+
+    // Explicit webroot so static files (CSS/JS) work in dev and publish
+    var webRoot = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+    if (!Directory.Exists(webRoot)) Directory.CreateDirectory(webRoot);
+    builder.WebHost.UseWebRoot(webRoot);
+
     builder.Host.UseSerilog();
 
     // ===== DB =====
